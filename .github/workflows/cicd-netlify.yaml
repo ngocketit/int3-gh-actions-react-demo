@@ -1,0 +1,49 @@
+name: Netlify demo
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-something-${{ hashFiles('**/package-lock.json') }}
+          path: ~/.npm
+          restore-keys: |
+            ${{ runner.os }}-something-
+            ${{ runner.os }}-
+
+      - name: Run npm install
+        run: npm ci
+
+      - name: Run test
+        run: npm test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run build
+        run: npm run build
+
+      - name: Deploy to Netlify
+        uses: netlify/actions/cli@master
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        with:
+          args: deploy --dir=build --prod
